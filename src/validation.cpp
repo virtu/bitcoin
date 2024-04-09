@@ -2586,6 +2586,8 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
         time_5 - time_start // in microseconds (µs)
     );
 
+    LogPrintf("metric=block_sigops, hash=%s, height=%d, sigops=%lld\n", block_hash.ToString(), pindex->nHeight, nSigOpsCost);
+
     return true;
 }
 
