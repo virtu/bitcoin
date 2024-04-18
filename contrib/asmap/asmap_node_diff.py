@@ -23,7 +23,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-import asmap
 from asmap import net_to_prefix
 from asmap_tool import load_file
 
@@ -126,16 +125,8 @@ def read_asmap(filepath: Path):
     # return data
 
 
-def compare_asmaps(asmap_prev, asmap_cur, nodes: list[Node], age: int = 0):
-    """Comapre AS maps and print differences."""
-    # TEST
-
-    # if age:
-    #     print(f"Filtering nodes with age > {age} days.")
-    #     ...
-
-    # def compare_asmap_threshold(...)
-    #
+def compare_asmaps(asmap_prev, asmap_cur, nodes: list[Node]):
+    """Compare AS maps and print differences."""
 
     epoch_now = int(time.time())
     thresholds = {
