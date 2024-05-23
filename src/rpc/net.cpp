@@ -1133,7 +1133,9 @@ static RPCHelpMan getrawaddrman()
     return RPCHelpMan{"getrawaddrman",
         "EXPERIMENTAL warning: this call may be changed in future releases.\n"
         "\nReturns information on all address manager entries for the new and tried tables.\n",
-        {},
+        {
+            {"cache", RPCArg::Type::BOOL, RPCArg::Default{false}, "If set, output the addrman cache"},
+        },
         RPCResult{
             RPCResult::Type::OBJ_DYN, "", "", {
                 {RPCResult::Type::OBJ_DYN, "table", "buckets with addresses in the address manager table ( new, tried )", {
@@ -1146,7 +1148,19 @@ static RPCHelpMan getrawaddrman()
                         {RPCResult::Type::STR, "source", "The address that relayed the address to us"},
                         {RPCResult::Type::STR, "source_network", "The network (" + Join(GetNetworkNames(), ", ") + ") of the source address"},
                     }}
-                }}
+                }},
+                {RPCResult::Type::OBJ_DYN, "cache", "Optional: address manager caches dumped if requested", {
+                    {RPCResult::Type::ARR, "cache_id", "Array of address records from a specific cache", {
+                        {RPCResult::Type::OBJ, "", "",
+                            {
+                                {RPCResult::Type::NUM_TIME, "time", "The " + UNIX_EPOCH_TIME + " when the node was last seen"},
+                                {RPCResult::Type::NUM, "services", "The services offered by the node"},
+                                {RPCResult::Type::STR, "address", "The address of the node"},
+                                {RPCResult::Type::NUM, "port", "The port number of the node"},
+                                {RPCResult::Type::STR, "network", "The network the node connected through"},
+                            }},
+                    }},
+                }},
             }
         },
         RPCExamples{
@@ -1155,10 +1169,48 @@ static RPCHelpMan getrawaddrman()
         },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
             AddrMan& addrman = EnsureAnyAddrman(request.context);
+            NodeContext& node = EnsureAnyNodeContext(request.context);
+            const CConnman& connman = EnsureConnman(node);
+
+            // TODO: check position and white lines in other calls
+            // LogPrintf("request.params[0].isNull(): %d\n", request.params[0].isNull());
+            // LogPrintf("request.params[0].get_bool(): %d\n", request.params[0].get_bool());
+            // RPCArg::Default{false}
+            // RPCArg::Default{false}
+            // const bool absolute{request.params[3].isNull() ? false : request.params[3].get_bool()};
+            const bool cache{request.params[0].isNull() ? false : request.params[0].get_bool()};
+            // const bool cache = true;
 
             UniValue ret(UniValue::VOBJ);
+
             ret.pushKV("new", AddrmanTableToJSON(addrman.GetEntries(false)));
             ret.pushKV("tried", AddrmanTableToJSON(addrman.GetEntries(true)));
+            // if (cache) {
+            // }
+            // TODO: remove empty lines
+            if (cache) {
+                LogPrintf("cache: true\n");
+                UniValue caches(UniValue::VOBJ);
+                const auto& m_addr_response_caches = connman.GetAddrResponseCaches();
+                for (const auto& pair : m_addr_response_caches) {
+                    uint64_t cache_id = pair.first;
+                    const std::vector<CAddress>& vAddr = pair.second.m_addrs_response_cache;
+                    UniValue addressesArray(UniValue::VARR);
+                    for (const CAddress& addr : vAddr) {
+                        UniValue obj(UniValue::VOBJ);
+                        obj.pushKV("time", int64_t{TicksSinceEpoch<std::chrono::seconds>(addr.nTime)});
+                        obj.pushKV("services", (uint64_t)addr.nServices);
+                        obj.pushKV("address", addr.ToStringAddr());
+                        obj.pushKV("port", addr.GetPort());
+                        obj.pushKV("network", GetNetworkName(addr.GetNetClass()));
+                        addressesArray.push_back(obj);
+                        // table.pushKVEnd(key.str(), AddrmanEntryToJSON(info));
+                    }
+                    caches.pushKV(std::to_string(cache_id), addressesArray);
+                }
+                ret.pushKV("cache", caches);
+            }
+            // TODO: remove empty lines
             return ret;
         },
     };

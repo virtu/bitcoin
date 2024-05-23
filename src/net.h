@@ -1453,6 +1453,13 @@ private:
      */
     std::map<uint64_t, CachedAddrResponse> m_addr_response_caches;
 
+public:
+    // Public getter for read-only access to m_addr_response_caches
+    const std::map<uint64_t, CachedAddrResponse>& GetAddrResponseCaches() const {
+        return m_addr_response_caches;
+    }
+
+private:
     /**
      * Services this node offers.
      *
