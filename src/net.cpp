@@ -3500,7 +3500,7 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
             num_caches_before,
             num_caches_after,
             cache_entry.m_addrs_response_cache.size(),
-            static_cast<long long int>(cache_entry.m_cache_entry_expiration.count() / 1000)
+            static_cast<long long int>(cache_entry.m_cache_entry_expiration.count() / (1000 * 1000))
         );
     }
     return cache_entry.m_addrs_response_cache;
