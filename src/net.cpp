@@ -3447,7 +3447,10 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
         .Write(requestor.IsInboundConn() ? requestor.addrBind.GetPort() : 0)
         .Finalize();
     const auto current_time = GetTime<std::chrono::microseconds>();
+    size_t num_caches_before = m_addr_response_caches.size();
     auto r = m_addr_response_caches.emplace(cache_id, CachedAddrResponse{});
+    bool new_cache_record = r.second;
+    size_t num_caches_after = m_addr_response_caches.size();
     CachedAddrResponse& cache_entry = r.first->second;
     if (cache_entry.m_cache_entry_expiration < current_time) { // If emplace() added new one it has expiration 0.
         cache_entry.m_addrs_response_cache = GetAddresses(max_addresses, max_pct, /*network=*/std::nullopt);
@@ -3476,6 +3479,18 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
         // max. 24 hours of "penalty" due to cache shouldn't make any meaningful difference
         // in terms of the freshness of the response.
         cache_entry.m_cache_entry_expiration = current_time + std::chrono::hours(21) + GetRandMillis(std::chrono::hours(6));
+
+        LogPrintf("AddrManCache: op=%s, cache_id=%llu, network=%s, socket=%s, port=%d, caches_before=%zu, caches_after=%zu, size=%zu, expiration=%llu",
+            new_cache_record ? "new" : "update",
+            cache_id,
+            GetNetworkName(requestor.ConnectedThroughNetwork()),
+            std::string(local_socket_bytes.begin(), local_socket_bytes.end()).c_str(),
+            requestor.IsInboundConn() ? requestor.addrBind.GetPort() : 0,
+            num_caches_before,
+            num_caches_after,
+            cache_entry.m_addrs_response_cache.size(),
+            static_cast<long long int>(cache_entry.m_cache_entry_expiration.count())
+        );
     }
     return cache_entry.m_addrs_response_cache;
 }
