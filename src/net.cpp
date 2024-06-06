@@ -3438,9 +3438,8 @@ std::vector<CAddress> CConnman::GetAddresses(size_t max_addresses, size_t max_pc
 
 std::string formatAddrBytes(const std::vector<unsigned char>& bytes) {
     std::ostringstream stream;
+    stream << "0x";  // Add space between bytes but not before the first byte
     for (size_t i = 0; i < bytes.size(); ++i) {
-        if (i > 0)
-            stream << " ";  // Add space between bytes but not before the first byte
         stream << std::hex << (int)bytes[i];
     }
     return stream.str();
@@ -3491,7 +3490,7 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
         // in terms of the freshness of the response.
         cache_entry.m_cache_entry_expiration = current_time + std::chrono::hours(21) + GetRandMillis(std::chrono::hours(6));
 
-        LogPrintf("AddrManCache: op=%s, cache_id=%llu, network=%s, socket_string=%s, socket_bytes=%s, port=%d, caches_before=%zu, caches_after=%zu, size=%zu, expiration=%llu",
+        LogPrintf("metric=AddrManCache, op=%s, cache_id=%llu, network=%s, socket_string=%s, socket_bytes=%s, port=%d, caches_before=%zu, caches_after=%zu, size=%zu, expiration=%llu\n",
             new_cache_record ? "new" : "update",
             cache_id,
             GetNetworkName(requestor.ConnectedThroughNetwork()),
@@ -3501,7 +3500,7 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
             num_caches_before,
             num_caches_after,
             cache_entry.m_addrs_response_cache.size(),
-            static_cast<long long int>(cache_entry.m_cache_entry_expiration.count())
+            static_cast<long long int>(cache_entry.m_cache_entry_expiration.count() / 1000)
         );
     }
     return cache_entry.m_addrs_response_cache;
