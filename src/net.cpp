@@ -3449,6 +3449,8 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
 {
     auto local_socket_bytes = requestor.addrBind.GetAddrBytes();
     auto local_socket_str = requestor.addrBind.ToStringAddr();
+    auto peer_socket_bytes = requestor.addrBind.GetAddrBytes();
+    auto peer_socket_str = requestor.addrBind.ToStringAddr();
     uint64_t cache_id = GetDeterministicRandomizer(RANDOMIZER_ID_ADDRCACHE)
         .Write(requestor.ConnectedThroughNetwork())
         .Write(local_socket_bytes)
@@ -3490,12 +3492,14 @@ std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addres
         // in terms of the freshness of the response.
         cache_entry.m_cache_entry_expiration = current_time + std::chrono::hours(21) + GetRandMillis(std::chrono::hours(6));
 
-        LogPrintf("metric=AddrManCache, op=%s, cache_id=%llu, network=%s, socket_string=%s, socket_bytes=%s, port=%d, caches_before=%zu, caches_after=%zu, size=%zu, expiration=%llu\n",
+        LogPrintf("metric=AddrManCache, op=%s, cache_id=%llu, network=%s, socket_string=%s, socket_bytes=%s, peer_string=%s, peer_bytes=%s, port=%d, caches_before=%zu, caches_after=%zu, size=%zu, expiration=%llu\n",
             new_cache_record ? "new" : "update",
             cache_id,
             GetNetworkName(requestor.ConnectedThroughNetwork()),
             local_socket_str.c_str(),
             formatAddrBytes(local_socket_bytes).c_str(),
+            peer_socket_str.c_str(),
+            formatAddrBytes(peer_socket_bytes).c_str(),
             requestor.IsInboundConn() ? requestor.addrBind.GetPort() : 0,
             num_caches_before,
             num_caches_after,
